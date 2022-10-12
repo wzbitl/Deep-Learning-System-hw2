@@ -22,10 +22,14 @@ class SGD(Optimizer):
         self.momentum = momentum
         self.u = {}
         self.weight_decay = weight_decay
+        for p in self.params: self.u[p] = 0
 
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        for p in self.params:
+            regula = p.grad + p * self.weight_decay
+            self.u[p] = (self.momentum * self.u[p] + (1 - self.momentum) * regula).data
+            p.cached_data -= self.lr * self.u[p].cached_data
         ### END YOUR SOLUTION
 
 
@@ -50,7 +54,20 @@ class Adam(Optimizer):
         self.m = {}
         self.v = {}
 
+        for p in self.params: 
+            self.m[p] = 0
+            self.v[p] = 0
+
     def step(self):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.t += 1
+        for p in self.params:
+            regula = p.grad + p * self.weight_decay
+            m = self.beta1 * self.m[p] + (1 - self.beta1) * regula
+            v = self.beta2 * self.v[p] + (1 - self.beta2) * (regula ** 2)
+            self.m[p] = m.data
+            self.v[p] = v.data
+            m = (m / (1 - self.beta1 ** self.t)).data
+            v = (v / (1 - self.beta2 ** self.t)).data
+            p.cached_data -= self.lr * (m / (v ** 0.5 + self.eps)).cached_data
         ### END YOUR SOLUTION

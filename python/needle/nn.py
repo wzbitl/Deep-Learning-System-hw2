@@ -137,7 +137,7 @@ class SoftmaxLoss(Module):
     def forward(self, logits: Tensor, y: Tensor):
         ### BEGIN YOUR SOLUTION
         batch_size = y.shape[0]
-        y_one_hot = init.one_hot(max(y.numpy())+1, y)
+        y_one_hot = init.one_hot(logits.shape[1], y)
         expzsum = ops.log(ops.exp(logits).sum(axes=1))
         zy = ops.summation(logits * y_one_hot, axes=1)
         loss = ops.summation(expzsum - zy)
@@ -155,8 +155,8 @@ class BatchNorm1d(Module):
         ### BEGIN YOUR SOLUTION
         self.weight = Parameter(init.ones(self.dim), device=device, dtype=dtype)
         self.bias = Parameter(init.zeros(self.dim), device=device, dtype=dtype)
-        self.running_mean = Parameter(init.zeros(self.dim), device=device, dtype=dtype)
-        self.running_var = Parameter(init.ones(self.dim), device=device, dtype=dtype)
+        self.running_mean = init.zeros(self.dim)
+        self.running_var = init.ones(self.dim)
         ### END YOUR SOLUTION
 
 
