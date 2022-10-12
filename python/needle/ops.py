@@ -240,12 +240,14 @@ class BroadcastTo(TensorOp):
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        shapei = node.inputs[0].shape
-        index = tuple([i for i in range(len(self.shape)) if (i >= len(shapei) or self.shape[i] > shapei[i])])
-        return summation(out_grad, axes=index).reshape(shapei)
+        input_shape = node.inputs[0].shape
+        extra_len = len(out_grad.shape)-len(input_shape)
+        index = tuple([i for i in reversed(range(len(out_grad.shape))) if (i < extra_len
+        or out_grad.shape[i] != input_shape[i-extra_len])])
+        return summation(out_grad, axes=index).reshape(input_shape)
         ### END YOUR SOLUTION
 
-
+        
 def broadcast_to(a, shape):
     return BroadcastTo(shape)(a)
 
@@ -372,12 +374,33 @@ class LogSumExp(TensorOp):
 
     def compute(self, Z):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        Z_max = array_api.max(Z, self.axes)
+        s = list(Z.shape)
+        if self.axes is None:
+            s = [1 for _ in range(len(Z.shape))]
+        else:
+            for i in self.axes: s[i] = 1
+        Z = Z - array_api.broadcast_to(array_api.reshape(Z_max, s), Z.shape)
+        Z = array_api.exp(Z).sum(self.axes)
+        Z = array_api.log(Z)
+        return Z + Z_max
         ### END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        input = node.inputs[0].numpy()
+        Z_max = array_api.max(input, self.axes)
+        s = list(input.shape)
+        if self.axes is None:
+            s = [1 for _ in range(len(input.shape))]
+        else:
+            for i in self.axes: s[i] = 1
+        g = broadcast_to(reshape(out_grad, s), input.shape)
+        input = input - array_api.broadcast_to(array_api.reshape(Z_max, s), input.shape)
+        expz = array_api.exp(input)
+        expzsum = array_api.exp(input).sum(self.axes)
+        logz = array_api.broadcast_to(array_api.reshape(expzsum, s), input.shape)
+        return g / Tensor(logz) * Tensor(expz)
         ### END YOUR SOLUTION
 
 
