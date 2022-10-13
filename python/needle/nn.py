@@ -96,7 +96,6 @@ class Linear(Module):
 
     def forward(self, X: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
-        #self.bias = ops.broadcast_to(self.bias, (X.shape[0], self.out_features))
         y =  X @ self.weight
         if self.bias: y += self.bias.broadcast_to(y.shape)
         return y
@@ -206,8 +205,12 @@ class Dropout(Module):
 
     def forward(self, x: Tensor) -> Tensor:
         ### BEGIN YOUR SOLUTION
-        prob = Tensor(np.random.binomial(n=1, p=1-self.p, size=x.shape))
-        return x * prob / (1-self.p)
+        if self.training:
+            #prob = Tensor(np.random.binomial(n=1, p=1-self.p, size=x.shape))
+            prob = init.randb(*x.shape, p=1-self.p)
+            return x * prob / (1-self.p)
+        else:
+            return x
         ### END YOUR SOLUTION
 
 
