@@ -47,7 +47,6 @@ def epoch(dataloader, model, opt=None):
         model.eval()
     else:
         model.train() 
-        opt.reset_grad()
     iteration = 0
     total_loss = 0
     total_example = len(dataloader.dataset)
@@ -63,6 +62,7 @@ def epoch(dataloader, model, opt=None):
         y_hat = np.argmax(logits.numpy(), axis=1)
         right_num += np.sum(y_hat == y.numpy())
         if opt:
+            opt.reset_grad()
             loss.backward()
             opt.step()
     average_loss = total_loss.numpy() / iteration
