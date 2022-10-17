@@ -138,20 +138,51 @@ class MNISTDataset(Dataset):
         transforms: Optional[List] = None,
     ):
         ### BEGIN YOUR SOLUTION
-        self.images, self.labels = parse_mnist(image_filename, label_filename)
-        self.transforms = transforms
+        self.images, self.labels = self._parse_mnist(image_filename, label_filename)
+        super().__init__(transforms)
         ### END YOUR SOLUTION
 
     def __getitem__(self, index) -> object:
         ### BEGIN YOUR SOLUTION
         imgs = self.images[index].reshape((-1, 28, 28, 1))
         imgs = np.stack([self.apply_transforms(i) for i in imgs])
+        imgs = imgs[0] if isinstance(index, int) else imgs
         return imgs, self.labels[index]
         ### END YOUR SOLUTION
 
     def __len__(self) -> int:
         ### BEGIN YOUR SOLUTION
         return len(self.labels)
+        ### END YOUR SOLUTION
+    def _parse_mnist(self, image_filesname, label_filename):
+        """ Read an images and labels file in MNIST format.  See this page:
+        http://yann.lecun.com/exdb/mnist/ for a description of the file format.
+        Args:
+            image_filename (str): name of gzipped images file in MNIST format
+            label_filename (str): name of gzipped labels file in MNIST format
+        Returns:
+            Tuple (X,y):
+                X (numpy.ndarray[np.float32]): 2D numpy array containing the loaded
+                    data.  The dimensionality of the data should be
+                    (num_examples x input_dim) where 'input_dim' is the full
+                    dimension of the data, e.g., since MNIST images are 28x28, it
+                    will be 784.  Values should be of type np.float32, and the data
+                    should be normalized to have a minimum value of 0.0 and a
+                    maximum value of 1.0.
+                y (numpy.ndarray[dypte=np.int8]): 1D numpy array containing the
+                    labels of the examples.  Values should be of type np.int8 and
+                    for MNIST will contain the values 0-9.
+        """
+        ### BEGIN YOUR SOLUTION
+        with gzip.open(label_filename, 'rb') as label_file:
+            magic_num, num_label = struct.unpack('>II', label_file.read(8))
+            y = np.frombuffer(label_file.read(), dtype=np.uint8)
+        
+        with gzip.open(image_filesname, 'rb') as image_file:
+            magic_num, num_image, num_row, num_column = struct.unpack('>IIII', image_file.read(16))
+            X = np.frombuffer(image_file.read(), dtype=np.uint8).reshape((len(y), 784)).astype(np.float32)
+            X = (X - np.min(X)) / (np.max(X) - np.min(X))
+        return X, y
         ### END YOUR SOLUTION
 
 class NDArrayDataset(Dataset):
@@ -164,33 +195,3 @@ class NDArrayDataset(Dataset):
     def __getitem__(self, i) -> object:
         return tuple([a[i] for a in self.arrays])
 
-def parse_mnist(image_filesname, label_filename):
-    """ Read an images and labels file in MNIST format.  See this page:
-    http://yann.lecun.com/exdb/mnist/ for a description of the file format.
-    Args:
-        image_filename (str): name of gzipped images file in MNIST format
-        label_filename (str): name of gzipped labels file in MNIST format
-    Returns:
-        Tuple (X,y):
-            X (numpy.ndarray[np.float32]): 2D numpy array containing the loaded
-                data.  The dimensionality of the data should be
-                (num_examples x input_dim) where 'input_dim' is the full
-                dimension of the data, e.g., since MNIST images are 28x28, it
-                will be 784.  Values should be of type np.float32, and the data
-                should be normalized to have a minimum value of 0.0 and a
-                maximum value of 1.0.
-            y (numpy.ndarray[dypte=np.int8]): 1D numpy array containing the
-                labels of the examples.  Values should be of type np.int8 and
-                for MNIST will contain the values 0-9.
-    """
-    ### BEGIN YOUR SOLUTION
-    with gzip.open(label_filename, 'rb') as label_file:
-        magic_num, num_label = struct.unpack('>II', label_file.read(8))
-        y = np.frombuffer(label_file.read(), dtype=np.uint8)
-    
-    with gzip.open(image_filesname, 'rb') as image_file:
-        magic_num, num_image, num_row, num_column = struct.unpack('>IIII', image_file.read(16))
-        X = np.frombuffer(image_file.read(), dtype=np.uint8).reshape((len(y), 784)).astype(np.float32)
-        X = (X - np.min(X)) / (np.max(X) - np.min(X))
-    return X, y
-    ### END YOUR SOLUTION
